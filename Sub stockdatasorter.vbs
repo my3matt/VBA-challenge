@@ -1,60 +1,88 @@
 Sub stockdatasorter()
-'Define Dimensions
+    'Loop through each worksheet
 Dim ws As Worksheet
-Dim ticker As String
-Dim vol As Integer
-Dim year_Open As Double
-Dim year_close As Double
-Dim yearly_change As Double
-Dim percent_change As Double
-Dim Summary_Table_Row As Integer
+    For Each ws In ActiveWorkbook.Worksheets
+    ws.Activate
+        'Determine Last row
+        LastRow = ws.Cells(Rows.Count, 1).End(xlUp).Row
+    'Define Dimensions
+        Dim year_Open As Double
+        Dim year_close As Double
+        Dim yearly_change As Double
+        Dim ticker As String
+        Dim Percent_Change As Double
+        Dim Volume As Double
+        Volume = 0
+        Dim Row As Double
+        Row = 2
+        Dim Column As Integer
+        Column = 1
+        Dim i As Long
 
-'Overflow Error and compute results to all worksheets
-On Error Resume Next
-For Each ws In ThisWorkbook.Worksheets
+        ' Define Header Columns
+        Cells(1, "I").Value = "Ticker"
+        Cells(1, "J").Value = "Yearly Change"
+        Cells(1, "K").Value = "Percent Change"
+        Cells(1, "L").Value = "Total Stock Volume"
 
-'Define Header Columns
-ws.Cells(1, 9).Value = "Ticker"
-ws.Cells(1, 10).Value = "Yearly Change"
-ws.Cells(1, 11).Value = "Percent Change"
-ws.Cells(1, 12).Value = "Total Stock Volume"
-
-'Using Summary Table to compute data simultaneously
-Summary_Table_Row = 2
-
-'Loop data through worksheet
-For i = 2 To ws.UsedRange.Rows.Count
-
-'Calculate values to compute in respective headers
-If ws.Cells(i + 1, 1).Value <> ws.Cells(i, 1).Value Then
-ticker = ws.Cells(i, 1).Value
-vol = ws.Cells(i, 7).Value
-year_Open = ws.Cells(i, 3).Value
-year_close = ws.Cells(i, 6).Value
-yearly_change = year_close - year_Open
-percent_change = year_close / year_Open
-
-'Fill header cells with calculated values
-ws.Cells(Summary_Table_Row, 9).Value = ticker
-ws.Cells(Summary_Table_Row, 10).Value = yearly_change
-ws.Cells(Summary_Table_Row, 11).Value = percent_change
-ws.Cells(Summary_Table_Row, 12).Value = vol
-Summary_Table_Row = Summary_Table_Row + 1
-vol = 0
-
-'Color Conditionals
-With ws.Range("J", 10).Value.FormatConditions.Add(xlCellValue, xlLess, "=0")
-                            .Interior.ColorIndex = 3
-                            End With
-With ws.Range("J", 10).Value.FormatConditions.Add(xlCellValue, xlGreater, "=0")
-                            .Interior.ColorIndex = 4
-                            End With
-
-End If
-Next i
-'Entering percent change in correct format
-ws.Columns("K").NumberFormat = "0.00%"
-Next
+        
+        'Set Year Open
+        year_Open = Cells(2, Column + 2).Value
+         
+         ' Loop data through worksheet
+        For i = 2 To LastRow
+         
+         ' If function to compute in respective headers
+            If Cells(i + 1, Column).Value <> Cells(i, Column).Value Then
+                ' Set Ticker
+                ticker = Cells(i, Column).Value
+                Cells(Row, Column + 8).Value = ticker
+                ' Set Year Close
+                year_close = Cells(i, Column + 5).Value
+                ' Calculate for Yearly Change
+                yearly_change = year_close - year_Open
+                Cells(Row, Column + 9).Value = yearly_change
+                ' Calculate for percent change
+                '-------if function to account for div/0
+                If (year_Open = 0 And year_close = 0) Then
+                    Percent_Change = 0
+                ElseIf (year_Open = 0 And year_close <> 0) Then
+                    Percent_Change = 1
+                'Calculate for percent change and format it accordingly
+                Else
+                    Percent_Change = yearly_change / year_Open
+                    Cells(Row, Column + 10).Value = Percent_Change
+                    Cells(Row, Column + 10).NumberFormat = "0.00%"
+                End If
+                ' Add Total Volume
+                Volume = Volume + Cells(i, Column + 6).Value
+                Cells(Row, Column + 11).Value = Volume
+                ' Add one to the summary table row
+                Row = Row + 1
+                ' reset open
+                year_Open = Cells(i + 1, Column + 2)
+                ' reset the Volume Total
+                Volume = 0
+            'if cells are the same ticker
+            Else
+                Volume = Volume + Cells(i, Column + 6).Value
+            End If
+        Next i
+        
+        ' Determine the Last Row of Yearly Change per WS
+        YCLastRow = ws.Cells(Rows.Count, Column + 8).End(xlUp).Row
+        ' Color conditionals
+        For j = 2 To YCLastRow
+            If (Cells(j, Column + 9).Value > 0 Or Cells(j, Column + 9).Value = 0) Then
+                Cells(j, Column + 9).Interior.ColorIndex = 4
+            ElseIf Cells(j, Column + 9).Value < 0 Then
+                Cells(j, Column + 9).Interior.ColorIndex = 3
+            End If
+        Next j
+        
+   
+        
+    Next ws
+        
 End Sub
-
 
